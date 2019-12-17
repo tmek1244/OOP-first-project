@@ -1,16 +1,19 @@
 package agh.cs.project1;
 
+import agh.cs.project1.mapRepresentation.Vector2d;
+import agh.cs.project1.mapRepresentation.World;
+
 public class MapVisualizer {
     private static final String EMPTY_CELL = " ";
     private static final String FRAME_SEGMENT = "-";
     private static final String CELL_SEGMENT = "|";
-    private WorldMap map;
+    private World map;
 
     /**
      * Initializes the MapVisualizer with an instance of map to visualize.
      * @param map
      */
-    public MapVisualizer(WorldMap map) {
+    public MapVisualizer(World map) {
         this.map = map;
     }
 

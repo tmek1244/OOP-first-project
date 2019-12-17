@@ -1,23 +1,26 @@
-package agh.cs.project1;
+package agh.cs.project1.mapRepresentation;
 
-import javax.swing.*;
-import java.lang.reflect.Member;
+import agh.cs.project1.mapObject.Animal;
+import agh.cs.project1.mapObject.Grass;
+import agh.cs.project1.mapObject.IMapElement;
+
 import java.util.*;
 
-public class WorldMap {
+public class World {
 //    private Hashtable<Vector2d, IMapElement> usedMapCoords = new Hashtable<Vector2d, IMapElement>();
-    private MapRepresentation usedMapCoords;
+    private WorldMap worldMapRepresentation;
     private List<Animal> animals = new ArrayList<>();
 
     private final Vector2d mapLowerLeft;
     private final Vector2d mapUpperRight;
     private final Vector2d jungleLowerLeft;
     private final Vector2d jungleUpperRight;
+    private final int jungleArea;
     private int day;
 
     private Stack<Animal> graveyard = new Stack<>();
 
-    public WorldMap(int mapSizeX, int mapSizeY, int jungleSizeX, int jungleSizeY)
+    public World(int mapSizeX, int mapSizeY, int jungleSizeX, int jungleSizeY)
     {
         this.day = 0;
         this.mapLowerLeft = new Vector2d(0,0);
@@ -25,8 +28,9 @@ public class WorldMap {
 
         this.jungleLowerLeft = new Vector2d((int)((mapSizeX - jungleSizeX)/2), (int)((mapSizeY - jungleSizeX)/2));
         this.jungleUpperRight = new Vector2d(jungleSizeX, jungleSizeY).add(this.jungleLowerLeft);
+        this.jungleArea = jungleSizeX * jungleSizeY;
 
-        this.usedMapCoords = new MapRepresentation(mapSizeX, mapSizeY);
+        this.worldMapRepresentation = new WorldMap(mapSizeX, mapSizeY);
     }
 
     public void place(IMapElement mapObject)
@@ -34,7 +38,7 @@ public class WorldMap {
 //        if(!this.isOccupied(mapObject.getPosition()))
 //        {
 //            this.usedMapCoords.put(mapObject.getPosition(), mapObject);
-        this.usedMapCoords.add(mapObject);
+        this.worldMapRepresentation.add(mapObject);
 //            this.usedMapCoords[mapObject.getPosition().x][mapObject.getPosition().y].add(mapObject);
         if(mapObject instanceof Animal)
             this.animals.add((Animal)mapObject);
@@ -44,16 +48,11 @@ public class WorldMap {
     }
 
     public boolean isOccupied(Vector2d position) {
-        return this.usedMapCoords.containsKey(position.modulo(this.mapUpperRight));
+        return this.worldMapRepresentation.containsKey(position.modulo(this.mapUpperRight));
     }
-//
-//    public boolean canMoveTo(Vector2d position)
-//    {
-//
-//    }
 
     public Object objectAt(Vector2d position) {
-        return this.usedMapCoords.getFirstOrNull(position.modulo(this.mapUpperRight));
+        return this.worldMapRepresentation.getFirstOrNull(position.modulo(this.mapUpperRight));
     }
 
     public Vector2d modulo(Vector2d other)
@@ -74,23 +73,24 @@ public class WorldMap {
         {
             animal.makeAMove();
         }
+        this.produceNewShips();
         this.addGrass();
     }
 
     public void positionChanged(Vector2d oldPosition, Animal thisAnimal)
     {
-        this.usedMapCoords.remove(thisAnimal, oldPosition);
-        this.usedMapCoords.add(thisAnimal);
-        if(this.usedMapCoords.isGrass(thisAnimal.getPosition()))
+        this.worldMapRepresentation.remove(thisAnimal, oldPosition);
+        this.worldMapRepresentation.add(thisAnimal);
+        if(this.worldMapRepresentation.isGrass(thisAnimal.getPosition()))
         {
-            thisAnimal.cure(5);
+            thisAnimal.cure(30);
             this.eatGrass(thisAnimal.getPosition());
         }
     }
 
     public void eatGrass(Vector2d position)
     {
-        this.usedMapCoords.deleteGrassIfPresent(position);
+        this.worldMapRepresentation.deleteGrassIfPresent(position);
     }
 
 
@@ -99,7 +99,7 @@ public class WorldMap {
         while(!this.graveyard.isEmpty()) {
             Animal animal = this.graveyard.pop();
             this.animals.remove(animal);
-            this.usedMapCoords.remove(animal);
+            this.worldMapRepresentation.remove(animal);
         }
     }
 
@@ -114,9 +114,9 @@ public class WorldMap {
         Vector2d grassOnSteppe = findPlaceForGrass("steppe");
         assert grassInJungle != null;
         Grass inJungle = new Grass(grassInJungle);
-        this.usedMapCoords.add(inJungle);
+        this.worldMapRepresentation.add(inJungle);
         assert grassOnSteppe != null;
-        this.usedMapCoords.add(new Grass(grassOnSteppe));
+        this.worldMapRepresentation.add(new Grass(grassOnSteppe));
     }
 
     private Vector2d findPlaceForGrass(String partOfMap)
@@ -124,12 +124,13 @@ public class WorldMap {
         if(partOfMap.equals("jungle"))
         {
             Vector2d position;
-
+            int i = 0;
             do{
+                i += 1;
                 int x = (int)(Math.random()*(this.jungleUpperRight.x - this.jungleLowerLeft.x) + this.jungleLowerLeft.x);
                 int y = (int)(Math.random()*(this.jungleUpperRight.y - this.jungleLowerLeft.y) + this.jungleLowerLeft.y);
                 position = new Vector2d(x, y);
-            }while(this.objectAt(position) instanceof Grass);
+            }while(this.objectAt(position) instanceof Grass && i < this.jungleArea);
 
             return position;
         }
@@ -150,11 +151,28 @@ public class WorldMap {
 
     public IMapElement getElementOnPosition(Vector2d position)
     {
-        return this.usedMapCoords.getFirstOrNull(position);
+        return this.worldMapRepresentation.getFirstOrNull(position);
     }
 
-    public MapRepresentation getMapRepresentation()
+    public int howManyAnimalsAt(Vector2d position)
     {
-        return this.usedMapCoords;
+        return this.worldMapRepresentation.howManyAnimalsAt(position);
+    }
+
+    public void produceNewShips()
+    {
+        List<Vector2d> positions = new ArrayList<>();
+        for(Animal animal: this.animals)
+            positions.add(animal.getPosition());
+        for(Vector2d animalPosition: positions)
+        {
+            if(this.howManyAnimalsAt(animalPosition) == 2)
+            {
+                LinkedList<Animal> twoAnimals= this.worldMapRepresentation.getAnimalsOnPosition(animalPosition);
+                Animal newAnimal = twoAnimals.getFirst().produceNewAnimal(twoAnimals.getLast());
+                if(newAnimal != null)
+                    this.place(newAnimal);
+            }
+        }
     }
 }

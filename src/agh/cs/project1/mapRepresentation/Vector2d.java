@@ -1,4 +1,4 @@
-package agh.cs.project1;
+package agh.cs.project1.mapRepresentation;
 
 public class Vector2d
 {

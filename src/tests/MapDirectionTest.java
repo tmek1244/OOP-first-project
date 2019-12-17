@@ -1,13 +1,10 @@
 package tests;
 
-import agh.cs.project1.MapDirection;
-import agh.cs.project1.Vector2d;
-
-import java.util.SortedSet;
+import agh.cs.project1.mapRepresentation.Vector2d;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static agh.cs.project1.MapDirection.*;
+import static agh.cs.project1.mapRepresentation.MapDirection.*;
 
 class MapDirectionTest {
 

@@ -1,10 +1,8 @@
-package agh.cs.project1;
+package agh.cs.project1.visualization;
 
 import javax.swing.*;
 
 import java.awt.*;
-
-import static javax.swing.text.StyleConstants.setBackground;
 
 public class Visualization extends JFrame{
     public Visualization() {
@@ -24,7 +22,6 @@ public class Visualization extends JFrame{
     }
 
     public static void main(String[] args) {
-        System.out.println(-1 % 5);
         EventQueue.invokeLater(() -> {
             Visualization ex = new Visualization();
             ex.setVisible(true);

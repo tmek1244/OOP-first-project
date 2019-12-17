@@ -1,32 +1,42 @@
-package agh.cs.project1;
+package agh.cs.project1.mapObject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
+import agh.cs.project1.mapRepresentation.MapDirection;
+import agh.cs.project1.mapRepresentation.Vector2d;
+import agh.cs.project1.mapRepresentation.World;
 
-public class Animal implements IMapElement{
+import java.util.Objects;
+
+public class Animal implements IMapElement {
     private MapDirection orientation;
     private Vector2d position;
-    private WorldMap map;
+    private World map;
     private int health;
-//    private List<IPositionChangeObserver> observers = new ArrayList<>();
-    private int[] gen;
+    private int minHealthToProduce;
 
-    private int MAX_HEALTH = 20;
+    private Gens gens;
 
-    public Animal(WorldMap map)
+    private int MAX_HEALTH = 100;
+
+    public Animal(World map)
     {
         this(map, new Vector2d(2,2));
     }
 
-    public Animal(WorldMap map, Vector2d initialPosition)
+    public Animal(World map, Vector2d initialPosition)
+    {
+        this(map, initialPosition, null, null);
+    }
+
+    public Animal(World map, Vector2d initialPosition, Integer health, Gens gens)
     {
         this.orientation = MapDirection.NORTH;
         this.position = initialPosition;
         this.map = map;
-        this.health = MAX_HEALTH;
-        this.gen = this.getRandomGens();
+        this.health = Objects.requireNonNullElseGet(health, () -> MAX_HEALTH);
+        this.gens = Objects.requireNonNullElseGet(gens, Gens::new);
+        this.minHealthToProduce = this.MAX_HEALTH / 2;
     }
+
 
     @Override
     public String toString()
@@ -39,7 +49,6 @@ public class Animal implements IMapElement{
     {
         this.turn();
         Vector2d oldPosition = this.position;
-//        System.out.println(this.position);
         if(this.moveIfPossible()) {
             this.map.positionChanged(oldPosition, this);
 //            this.eatGrassIfIsAt();
@@ -49,14 +58,13 @@ public class Animal implements IMapElement{
 
     private void turn()
     {
-        int whichMove = new Random().nextInt(this.gen.length);
-        this.orientation = this.orientation.turnByAngle(whichMove);
+        this.orientation = this.orientation.turnByAngle(this.gens.getAngle());
     }
 
     private boolean moveIfPossible()
     {
         Vector2d position = this.map.modulo(this.position.add(this.orientation.toUnitVector()));
-        if(!this.isAnyAnimalAt(position))
+        if(this.howManyAnimalsAt(position) < 10)
         {
             this.position = position;
             return true;
@@ -67,6 +75,11 @@ public class Animal implements IMapElement{
     private boolean isAnyAnimalAt(Vector2d position)
     {
         return this.map.objectAt(position) instanceof Animal;
+    }
+
+    private int howManyAnimalsAt(Vector2d position)
+    {
+        return this.map.howManyAnimalsAt(position);
     }
 
     public Vector2d getPosition()
@@ -95,14 +108,19 @@ public class Animal implements IMapElement{
             this.map.placeAnimalToGraveyard(this);
     }
 
-    private int [] getRandomGens()
+    private int healthForKid()
     {
-        int[] gens = new int[32];
-        for(int i = 0; i < 32; i++)
+        this.health = 3*this.health/4;
+        return this.health / 3;
+    }
+
+    public Animal produceNewAnimal(Animal other)
+    {
+        if(this.minHealthToProduce <= this.health && other.minHealthToProduce <= other.health)
         {
-            gens[i] = new Random().nextInt(8);
+            Gens gensForKid = new Gens(this.gens, other.gens);
+            return new Animal(this.map, this.position, this.healthForKid() + other.healthForKid(), gensForKid);
         }
-        Arrays.sort(gens);
-        return gens;
+        return null;
     }
 }

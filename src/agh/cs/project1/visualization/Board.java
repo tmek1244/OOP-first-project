@@ -1,5 +1,12 @@
-package agh.cs.project1;
+package agh.cs.project1.visualization;
 
+
+import agh.cs.project1.mapRepresentation.WorldMap;
+import agh.cs.project1.mapRepresentation.Vector2d;
+import agh.cs.project1.mapRepresentation.World;
+import agh.cs.project1.mapObject.Animal;
+import agh.cs.project1.mapObject.Grass;
+import agh.cs.project1.mapObject.IMapElement;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,12 +21,12 @@ public class Board extends JPanel {
     private int mapSizeY;
     private int jungleSizeX;
     private int jungleSizeY;
-    private WorldMap map;
-    private MapRepresentation mapBoard;
+    private World map;
+    private WorldMap mapBoard;
 
     private Timer timer;
     private final int INITIAL_DELAY = 0;
-    private final int PERIOD_INTERVAL = 100;
+    private final int PERIOD_INTERVAL = 10;
 
 
     private final int scale = 30;
@@ -30,13 +37,11 @@ public class Board extends JPanel {
         this.jungleSizeX = 10;
         this.jungleSizeY = 10;
 
-
-        this.map = new WorldMap(this.mapSizeX, this.mapSizeY, this.jungleSizeX, this.jungleSizeY);
+        this.map = new World(this.mapSizeX, this.mapSizeY, this.jungleSizeX, this.jungleSizeY);
         this.map.place(new Animal(this.map, new Vector2d(20,10)));
         this.map.place(new Animal(this.map, new Vector2d(20,10)));
         this.map.place(new Animal(this.map, new Vector2d(20,10)));
         this.map.place(new Animal(this.map, new Vector2d(20,10)));
-        this.mapBoard = this.map.getMapRepresentation();
         initBoard();
     }
 

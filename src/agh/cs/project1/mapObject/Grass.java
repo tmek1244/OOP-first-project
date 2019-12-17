@@ -1,4 +1,6 @@
-package agh.cs.project1;
+package agh.cs.project1.mapObject;
+
+import agh.cs.project1.mapRepresentation.Vector2d;
 
 public class Grass implements IMapElement {
     private Vector2d position;

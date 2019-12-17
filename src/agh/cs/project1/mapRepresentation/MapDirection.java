@@ -1,4 +1,4 @@
-package agh.cs.project1;
+package agh.cs.project1.mapRepresentation;
 
 public enum MapDirection {
     NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST;
@@ -33,7 +33,7 @@ public enum MapDirection {
         return MapDirection.values()[(this.ordinal() + angle) % MapDirection.values().length];
     }
 
-    public  Vector2d toUnitVector()
+    public Vector2d toUnitVector()
     {
         int x = this.ordinal();
         return new Vector2d((int)Math.signum((double)(x - 4)) * (-1) * (x%4)/(Math.max(x%4, 1)),
