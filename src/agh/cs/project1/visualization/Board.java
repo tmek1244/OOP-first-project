@@ -34,7 +34,7 @@ public class Board extends JPanel {
 
         this.map = new World(this.mapSizeX, this.mapSizeY, jungleSizeX, jungleSizeY);
         for(int i = 0; i < LoadSettings.animalsAtBeginning; i++)
-            this.map.place(new Animal(this.map, new Vector2d(this.mapSizeX/2,this.mapSizeY/2)));
+            this.map.place(new Animal(this.map, Vector2d.getRandomVector2d(this.mapSizeX, this.mapSizeY)));
 
         initBoard();
     }
@@ -67,7 +67,6 @@ public class Board extends JPanel {
                 if(objectToDraw != null)
                 {
                    if(objectToDraw instanceof Animal) {
-//                       System.out.println("board: " + objectToDraw);
                        g.drawImage(this.sheep, this.scale * i, this.scale * j, this);
                    }
                    else if(objectToDraw instanceof Grass)

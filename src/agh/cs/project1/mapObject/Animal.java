@@ -33,7 +33,7 @@ public class Animal implements IMapElement {
     public Animal(World map, Vector2d initialPosition, Integer health, Gens gens)
     {
         this.ID = IdGenerator.getNextID();
-        this.orientation = MapDirection.NORTH;
+        this.orientation = MapDirection.getRandomDirection();
         this.position = initialPosition;
         this.map = map;
         this.health = Objects.requireNonNullElseGet(health, () -> MAX_HEALTH);

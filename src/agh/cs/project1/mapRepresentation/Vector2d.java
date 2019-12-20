@@ -1,14 +1,21 @@
 package agh.cs.project1.mapRepresentation;
 
+import java.util.Random;
+
 public class Vector2d implements Comparable<Vector2d>
 {
-    public final int x;
-    public final int y;
+    final int x;
+    final int y;
 
     public Vector2d(int x, int y)
     {
         this.x = x;
         this.y = y;
+    }
+
+    public static Vector2d getRandomVector2d(int x, int y)
+    {
+        return new Vector2d(new Random().nextInt(x), new Random().nextInt(y));
     }
 
     public String toString()
