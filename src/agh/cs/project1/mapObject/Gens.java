@@ -4,24 +4,24 @@ import java.util.Arrays;
 import java.util.Random;
 
 
-public class Gens {
+class Gens {
     private static int NUMBER_OF_GENS = 24;
     private static int NUMBER_OF_DIFF_GENS = 8;
     private int[] gens;
 
-    public Gens()
+    Gens()
     {
         this.gens = getRandomGens();
     }
 
-    public Gens(Gens firstParent, Gens secondParent)
+    Gens(Gens firstParent, Gens secondParent)
     {
         this.gens = createGensForKid(firstParent, secondParent);
     }
 
-    public int getAngle()
+    int getAngleInInt()
     {
-        int whichMove = new Random().nextInt(this.gens.length + NUMBER_OF_DIFF_GENS);
+        int whichMove = new Random().nextInt(NUMBER_OF_GENS+ NUMBER_OF_DIFF_GENS);
         if(whichMove < NUMBER_OF_DIFF_GENS)
             return whichMove;
         else
@@ -41,21 +41,14 @@ public class Gens {
 
     private static int[] createGensForKid(Gens firstParent, Gens secondParent)
     {
-        int firstCut = new Random().nextInt(secondParent.gens.length);
-        int secondCut = new Random().nextInt(secondParent.gens.length - firstCut) + firstCut;
-        int[] gensForKid = Arrays.copyOf(secondParent.gens, secondParent.gens.length);
-//        System.arraycopy(gensForKid, secondParent.gens.length, firstParent.getGensBetween(firstCut, secondCut)
-//                , firstCut, secondParent.gens.length);
+        int firstCut = new Random().nextInt(NUMBER_OF_GENS);
+        int secondCut = new Random().nextInt(NUMBER_OF_GENS - firstCut) + firstCut;
+        int[] gensForKid = Arrays.copyOf(secondParent.gens, NUMBER_OF_GENS);
         if (secondCut - firstCut >= 0)
             System.arraycopy(firstParent.gens, firstCut, gensForKid, firstCut, secondCut - firstCut);
 
         Arrays.sort(gensForKid);
 
         return gensForKid;
-    }
-
-    private int[] getGensBetween(int begin, int end)
-    {
-        return Arrays.copyOfRange(this.gens, begin, end);
     }
 }

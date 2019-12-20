@@ -7,105 +7,131 @@ import agh.cs.project1.mapObject.IMapElement;
 import java.util.*;
 
 public class World {
-//    private Hashtable<Vector2d, IMapElement> usedMapCoords = new Hashtable<Vector2d, IMapElement>();
-    private WorldMap worldMapRepresentation;
+    private WorldMap worldMap;
     private List<Animal> animals = new ArrayList<>();
 
-    private final Vector2d mapLowerLeft;
     private final Vector2d mapUpperRight;
     private final Vector2d jungleLowerLeft;
     private final Vector2d jungleUpperRight;
     private final int jungleArea;
-    private int day;
+    private int dayCounter;
 
     private Stack<Animal> graveyard = new Stack<>();
 
     public World(int mapSizeX, int mapSizeY, int jungleSizeX, int jungleSizeY)
     {
-        this.day = 0;
-        this.mapLowerLeft = new Vector2d(0,0);
-        this.mapUpperRight = new Vector2d(mapSizeX, mapSizeY);
+        this.dayCounter = 0;
 
-        this.jungleLowerLeft = new Vector2d((int)((mapSizeX - jungleSizeX)/2), (int)((mapSizeY - jungleSizeX)/2));
+        this.mapUpperRight = new Vector2d(mapSizeX, mapSizeY);
+        this.jungleLowerLeft = new Vector2d((mapSizeX - jungleSizeX)/2, (mapSizeY - jungleSizeY)/2);
         this.jungleUpperRight = new Vector2d(jungleSizeX, jungleSizeY).add(this.jungleLowerLeft);
         this.jungleArea = jungleSizeX * jungleSizeY;
 
-        this.worldMapRepresentation = new WorldMap(mapSizeX, mapSizeY);
+        this.worldMap = new WorldMap(mapSizeX, mapSizeY);
     }
 
-    public void place(IMapElement mapObject)
+    public void place(IMapElement newMapElement)
     {
-//        if(!this.isOccupied(mapObject.getPosition()))
-//        {
-//            this.usedMapCoords.put(mapObject.getPosition(), mapObject);
-        this.worldMapRepresentation.add(mapObject);
-//            this.usedMapCoords[mapObject.getPosition().x][mapObject.getPosition().y].add(mapObject);
-        if(mapObject instanceof Animal)
-            this.animals.add((Animal)mapObject);
-//            return true;
-//        }
-//        return false;
+        this.worldMap.add(newMapElement);
+        if(newMapElement instanceof Animal)
+            this.animals.add((Animal)newMapElement);
     }
 
     public boolean isOccupied(Vector2d position) {
-        return this.worldMapRepresentation.containsKey(position.modulo(this.mapUpperRight));
+        return this.worldMap.containsKey(position);
     }
 
-    public Object objectAt(Vector2d position) {
-        return this.worldMapRepresentation.getFirstOrNull(position.modulo(this.mapUpperRight));
+    public IMapElement objectAt(Vector2d position) {
+        return this.worldMap.tryToGetFirstElement(position);
     }
 
-    public Vector2d modulo(Vector2d other)
+    public Vector2d modulo(Vector2d position)
     {
-        return other.modulo(this.mapUpperRight);
+        return position.modulo(this.mapUpperRight);
     }
 
-    public void nextDay()
+    public void positionChanged(Animal thisAnimal, Vector2d oldPosition)
     {
-        this.day += 1;
-//        System.out.println("pozostalo " + this.animals.size() + " zwierzat!");
-        for(Animal animal: this.animals)
-        {
-            animal.nextDay();
-        }
-        this.clearGraveyard();
-        for(Animal animal: this.animals)
-        {
-            animal.makeAMove();
-        }
-        this.produceNewShips();
-        this.addGrass();
+        this.worldMap.remove(thisAnimal, oldPosition);
+        this.worldMap.add(thisAnimal);
     }
 
-    public void positionChanged(Vector2d oldPosition, Animal thisAnimal)
+    public IMapElement getElementOnPosition(Vector2d position)
     {
-        this.worldMapRepresentation.remove(thisAnimal, oldPosition);
-        this.worldMapRepresentation.add(thisAnimal);
-        if(this.worldMapRepresentation.isGrass(thisAnimal.getPosition()))
-        {
-            thisAnimal.cure(30);
-            this.eatGrass(thisAnimal.getPosition());
-        }
+        return this.worldMap.tryToGetFirstElement(position);
     }
 
-    public void eatGrass(Vector2d position)
+    public int howManyAnimalsAt(Vector2d position)
     {
-        this.worldMapRepresentation.deleteGrassIfPresent(position);
+        return this.worldMap.howManyAnimalsAt(position);
     }
 
-
-    private void clearGraveyard()
+    public int howManyAnimalsLive()
     {
-        while(!this.graveyard.isEmpty()) {
-            Animal animal = this.graveyard.pop();
-            this.animals.remove(animal);
-            this.worldMapRepresentation.remove(animal);
-        }
+        return this.animals.size();
     }
 
     public void placeAnimalToGraveyard(Animal animal)
     {
         this.graveyard.push(animal);
+    }
+
+    public void printTreeAt(Vector2d position)
+    {
+        this.worldMap.printTreeAt(position);
+    }
+
+    public void nextDay()
+    {
+        this.dayCounter += 1;
+        this.removeDeadAnimals();
+        this.moveAllAnimals();
+        this.eatGrass();
+        this.produceNewShips();
+        this.addGrass();
+    }
+
+    private void removeDeadAnimals()
+    {
+        for(Animal animal: this.animals)
+            animal.nextDay();
+
+        this.clearGraveyard();
+    }
+
+    private void moveAllAnimals()
+    {
+        for(Animal animal: this.animals)
+            animal.makeAMove();
+    }
+
+    private void eatGrass()
+    {
+        for(Vector2d animalPosition: this.getAnimalsPositions())
+            this.eatGrassAt(animalPosition);
+    }
+
+    private void produceNewShips()
+    {
+        for(Vector2d animalPosition: this.getAnimalsPositions())
+        {
+            if(this.howManyAnimalsAt(animalPosition) >= 2)
+            {
+                Animal firstAnimal = this.worldMap.tryToGetFirstAnimalAt(animalPosition);
+                Animal secondAnimal = this.worldMap.tryToGetSecondAnimalAt(animalPosition);
+                if(secondAnimal == null)
+                    continue;
+                this.worldMap.remove(firstAnimal);
+                this.worldMap.remove(secondAnimal);
+                Animal newAnimal = firstAnimal.produceNewAnimal(secondAnimal);
+
+                if(newAnimal != null) {
+                    this.place(newAnimal);
+                }
+                this.worldMap.add(firstAnimal);
+                this.worldMap.add(secondAnimal);
+            }
+        }
     }
 
     private void addGrass()
@@ -114,9 +140,23 @@ public class World {
         Vector2d grassOnSteppe = findPlaceForGrass("steppe");
         assert grassInJungle != null;
         Grass inJungle = new Grass(grassInJungle);
-        this.worldMapRepresentation.add(inJungle);
+        this.worldMap.add(inJungle);
         assert grassOnSteppe != null;
-        this.worldMapRepresentation.add(new Grass(grassOnSteppe));
+        this.worldMap.add(new Grass(grassOnSteppe));
+    }
+
+    private void eatGrassAt(Vector2d position)
+    {
+        this.worldMap.eatGrassIfPossible(position);
+    }
+
+    private void clearGraveyard()
+    {
+        while(!this.graveyard.isEmpty()) {
+            Animal animal = this.graveyard.pop();
+            this.animals.remove(animal);
+            this.worldMap.remove(animal);
+        }
     }
 
     private Vector2d findPlaceForGrass(String partOfMap)
@@ -127,10 +167,10 @@ public class World {
             int i = 0;
             do{
                 i += 1;
-                int x = (int)(Math.random()*(this.jungleUpperRight.x - this.jungleLowerLeft.x) + this.jungleLowerLeft.x);
-                int y = (int)(Math.random()*(this.jungleUpperRight.y - this.jungleLowerLeft.y) + this.jungleLowerLeft.y);
+                int x = (int)Math.round((Math.random()*(this.jungleUpperRight.x - this.jungleLowerLeft.x)) + this.jungleLowerLeft.x);
+                int y = (int)Math.round((Math.random()*(this.jungleUpperRight.y - this.jungleLowerLeft.y)) + this.jungleLowerLeft.y);
                 position = new Vector2d(x, y);
-            }while(this.objectAt(position) instanceof Grass && i < this.jungleArea);
+            }while(this.worldMap.isGrassAt(position) && i < this.jungleArea);
 
             return position;
         }
@@ -142,37 +182,19 @@ public class World {
                 int x = (int)(Math.random()*this.mapUpperRight.x);
                 int y = (int)(Math.random()*this.mapUpperRight.y);
                 position = new Vector2d(x, y);
-            }while(this.objectAt(position) instanceof Grass
+            }while(this.worldMap.isGrassAt(position)
                     || (position.follows(this.jungleLowerLeft) && position.precedes(this.jungleUpperRight)));
             return position;
         }
         return null;
     }
 
-    public IMapElement getElementOnPosition(Vector2d position)
+    private Set<Vector2d> getAnimalsPositions()
     {
-        return this.worldMapRepresentation.getFirstOrNull(position);
-    }
+        Set<Vector2d> positions = new TreeSet<>();
 
-    public int howManyAnimalsAt(Vector2d position)
-    {
-        return this.worldMapRepresentation.howManyAnimalsAt(position);
-    }
-
-    public void produceNewShips()
-    {
-        List<Vector2d> positions = new ArrayList<>();
         for(Animal animal: this.animals)
             positions.add(animal.getPosition());
-        for(Vector2d animalPosition: positions)
-        {
-            if(this.howManyAnimalsAt(animalPosition) == 2)
-            {
-                LinkedList<Animal> twoAnimals= this.worldMapRepresentation.getAnimalsOnPosition(animalPosition);
-                Animal newAnimal = twoAnimals.getFirst().produceNewAnimal(twoAnimals.getLast());
-                if(newAnimal != null)
-                    this.place(newAnimal);
-            }
-        }
+        return positions;
     }
 }

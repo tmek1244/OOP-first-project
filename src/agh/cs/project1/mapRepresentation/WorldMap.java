@@ -3,96 +3,82 @@ package agh.cs.project1.mapRepresentation;
 import agh.cs.project1.mapObject.Animal;
 import agh.cs.project1.mapObject.Grass;
 import agh.cs.project1.mapObject.IMapElement;
-import agh.cs.project1.mapRepresentation.Vector2d;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.*;
 
-public class WorldMap {
-    private ArrayList<ArrayList<LinkedList<IMapElement>>> name;
+class WorldMap {
+    private ArrayList<ArrayList<TreeSet<IMapElement>>> board;
 
-    public WorldMap(int x, int y)
+    WorldMap(int width, int height)
     {
-        this.name = new ArrayList<>(x);
-        for(int i = 0; i < x; i++) {
-            this.name.add(new ArrayList<>(y));
-            for(int j = 0; j < y; j++)
-            {
-                this.name.get(i).add(new LinkedList<>());
+        this.board = new ArrayList<>(width);
+        for(int i = 0; i < width; i++) {
+            this.board.add(new ArrayList<>(height));
+            for (int j = 0; j < height; j++) {
+                this.board.get(i).add(new TreeSet<>((e1, e2) -> {
+                    if (e1 instanceof Grass)
+                        return 1;
+                    if (e2 instanceof Grass)
+                        return -1;
+                    if (areEquallyStrong(e1, e2)) {
+                        return Integer.compare(((Animal) e1).getID(), ((Animal) e2).getID());
+                    }
+                    return (-1)*Integer.compare(((Animal) e1).getHealth(), ((Animal) e2).getHealth());
+                }));
             }
         }
-        System.out.println(this.name.get(10).size());
     }
 
-    public void add(IMapElement object)
+    void add(IMapElement newMapElement)
     {
-//        System.out.println(object.getPosition());
-        if(object instanceof Grass) {
-            this.name.get(object.getPosition().x).get(object.getPosition().y).add(object);
-        }
-        else if(object instanceof Animal) {
-            this.name.get(object.getPosition().x).get(object.getPosition().y).add(0, object);
-        }
+        if(newMapElement instanceof Grass && this.isGrassAt(newMapElement.getPosition()))
+            return;
+        getTreeSetAt(newMapElement.getPosition()).add(newMapElement);
     }
 
-    public void remove(IMapElement object, Vector2d position)
+    void remove(IMapElement object, Vector2d position)
     {
-//        int x = object.getPosition().x;
-//        int y = object.getPosition().y;
-        if(object instanceof Grass)
-            this.deleteGrassIfPresent(position);
-        else{
-            this.name.get(position.x).get(position.y).remove(object);
-//            System.out.println("asdad" + this.name[position.x][position.y].size());
-        }
+        getTreeSetAt(position).remove(object);
     }
 
-    public void remove(IMapElement object)
+    void remove(IMapElement object)
     {
-        if(object instanceof Grass)
-            this.deleteGrassIfPresent(object.getPosition());
-        else {
-            int x = object.getPosition().x;
-            int y = object.getPosition().y;
-
-            this.name.get(x).get(y).remove(object);
-        }
+        this.remove(object, object.getPosition());
     }
 
-    public boolean containsKey(Vector2d position)
+    boolean containsKey(Vector2d position)
     {
-        return !this.name.get(position.x).get(position.y).isEmpty();
+        return !getTreeSetAt(position).isEmpty();
     }
 
-    public boolean isGrass(Vector2d position)
+    boolean isGrassAt(Vector2d position)
     {
-        LinkedList<IMapElement> field = this.name.get(position.x).get(position.y);
-        for(IMapElement element: field)
+        TreeSet<IMapElement> field = getTreeSetAt(position);
+        if(field.isEmpty())
+            return false;
+        return field.last() instanceof Grass;
+    }
+
+    void eatGrassIfPossible(Vector2d position)
+    {
+        if(this.isGrassAt(position))
         {
-            if(element instanceof Grass)
-                return true;
+            int fullHealthToGiveAway = Objects.requireNonNull(getGrassAndRemove(position)).getHealth();
+            this.addHealthToTheStrongest(position, fullHealthToGiveAway/this.howManyToShare(position));
         }
-        return false;
     }
 
-    public void deleteGrassIfPresent(Vector2d position)
+    int howManyAnimalsAt(Vector2d position)
     {
-        LinkedList<IMapElement> field = this.name.get(position.x).get(position.y);
-        IMapElement grass = null;
-        for(IMapElement element: field)
-        {
-            if(element instanceof Grass)
-                grass = element;
-        }
-        field.remove(grass);
+        return getTreeSetAt(position).size() - (this.isGrassAt(position) ? 1 : 0);
     }
 
-    public IMapElement getFirstOrNull(Vector2d position) throws ArrayIndexOutOfBoundsException
+    IMapElement tryToGetFirstElement(Vector2d position) throws ArrayIndexOutOfBoundsException
     {
         try {
-            if (this.name.get(position.x).get(position.y).isEmpty())
+            if(getTreeSetAt(position).isEmpty())
                 return null;
-            return this.name.get(position.x).get(position.y).get(0);
+            return getTreeSetAt(position).first();
         }
         catch (ArrayIndexOutOfBoundsException e)
         {
@@ -101,34 +87,85 @@ public class WorldMap {
         }
     }
 
-    public String toString()
+    Animal tryToGetFirstAnimalAt(Vector2d position)
     {
-        StringBuilder result = new StringBuilder();
-        for (ArrayList<LinkedList<IMapElement>> arrayLists : this.name) {
-            for (LinkedList<IMapElement> arrayList : arrayLists) {
-                if (!arrayList.isEmpty()) {
-                    for (IMapElement element : arrayList)
-                        result.append(element.getPosition());
-                    result.append("\n");
-                }
-            }
-        }
-        return result.toString();
+        if(this.howManyAnimalsAt(position) < 1)
+            return null;
+        return (Animal)getTreeSetAt(position).first();
     }
 
-    public int howManyAnimalsAt(Vector2d position)
+    Animal tryToGetSecondAnimalAt(Vector2d position)
     {
-        return this.name.get(position.x).get(position.y).size() - (this.isGrass(position) ? 1 : 0);
+        if(this.howManyAnimalsAt(position) < 2)
+            return null;
+        Iterator<IMapElement> it = getTreeSetAt(position).iterator();
+        it.next();
+        return (Animal)it.next();
     }
 
-    public LinkedList<Animal> getAnimalsOnPosition(Vector2d position)
+    private void addHealthToTheStrongest(Vector2d position, int amountOfHealth)
     {
-        LinkedList<Animal> animalsAtThisPosition = new LinkedList<>();
-        for(IMapElement object: this.name.get(position.x).get(position.y))
+        int theStrongestHealth = this.tryToGetFirstAnimalAt(position).getHealth();
+        for(Animal animal: this.getAnimalsAt(position))
         {
-            if(object instanceof Animal)
-                animalsAtThisPosition.add((Animal)object);
+            if(animal.getHealth() == theStrongestHealth)
+                animal.cure(amountOfHealth);
+            else break;
         }
-        return animalsAtThisPosition;
+    }
+
+    private int howManyToShare(Vector2d position)
+    {
+        ArrayList<Animal> animals = getAnimalsAt(position);
+        int howManyAnimalsToShare = 0;
+        for (IMapElement animal : animals) {
+            if (areEquallyStrong(animal, animals.get(0)))
+                howManyAnimalsToShare += 1;
+            else
+                break;
+        }
+        return howManyAnimalsToShare;
+    }
+
+    private boolean areEquallyStrong(IMapElement firstAnimal, IMapElement secondAnimal)
+    {
+        if(firstAnimal instanceof Animal && secondAnimal instanceof Animal)
+            return ((Animal)firstAnimal).getHealth() == ((Animal)secondAnimal).getHealth();
+        return false;
+    }
+
+    private Grass getGrassAndRemove(Vector2d position)
+    {
+        if(this.isGrassAt(position))
+        {
+            Grass grassHere = (Grass)getTreeSetAt(position).last();
+            this.getTreeSetAt(position).pollLast();
+            return grassHere;
+        }
+        return null;
+    }
+
+    private TreeSet<IMapElement> getTreeSetAt(Vector2d position)
+    {
+        return this.board.get(position.x).get(position.y);
+    }
+
+    private ArrayList<Animal> getAnimalsAt(Vector2d position)
+    {
+        ArrayList<Animal> animals = new ArrayList<>();
+        for(IMapElement element: this.getTreeSetAt(position))
+        {
+            if(element instanceof Animal)
+                animals.add((Animal)element);
+        }
+        return animals;
+    }
+
+    void printTreeAt(Vector2d position)
+    {
+        TreeSet<IMapElement> tree = this.getTreeSetAt(position);
+        System.out.println(tree);
+        for(IMapElement cos: tree)
+            System.out.println(cos);
     }
 }

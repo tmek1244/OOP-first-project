@@ -1,12 +1,11 @@
 package agh.cs.project1.visualization;
 
-
-import agh.cs.project1.mapRepresentation.WorldMap;
 import agh.cs.project1.mapRepresentation.Vector2d;
 import agh.cs.project1.mapRepresentation.World;
 import agh.cs.project1.mapObject.Animal;
 import agh.cs.project1.mapObject.Grass;
 import agh.cs.project1.mapObject.IMapElement;
+import agh.cs.project1.settings.LoadSettings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,30 +18,32 @@ public class Board extends JPanel {
     private Image sheep;
     private int mapSizeX;
     private int mapSizeY;
-    private int jungleSizeX;
-    private int jungleSizeY;
     private World map;
-    private WorldMap mapBoard;
 
-    private Timer timer;
-    private final int INITIAL_DELAY = 0;
-    private final int PERIOD_INTERVAL = 10;
+    private final int PERIOD_INTERVAL = LoadSettings.periodInterval;
 
 
-    private final int scale = 30;
+    private final int scale = LoadSettings.scale;
 
-    public Board() {
-        this.mapSizeX = 50;
-        this.mapSizeY = 30;
-        this.jungleSizeX = 10;
-        this.jungleSizeY = 10;
+    Board() {
+        this.mapSizeX = LoadSettings.width;
+        this.mapSizeY = LoadSettings.height;
+        int jungleSizeX = (int) (this.mapSizeX * LoadSettings.jungleRatio);
+        int jungleSizeY = (int) (this.mapSizeY * LoadSettings.jungleRatio);
 
-        this.map = new World(this.mapSizeX, this.mapSizeY, this.jungleSizeX, this.jungleSizeY);
-        this.map.place(new Animal(this.map, new Vector2d(20,10)));
-        this.map.place(new Animal(this.map, new Vector2d(20,10)));
-        this.map.place(new Animal(this.map, new Vector2d(20,10)));
-        this.map.place(new Animal(this.map, new Vector2d(20,10)));
+
+        this.map = new World(this.mapSizeX, this.mapSizeY, jungleSizeX, jungleSizeY);
+        for(int i = 0; i < LoadSettings.animalsAtBeginning; i++)
+            this.map.place(new Animal(this.map, new Vector2d(this.mapSizeX/2,this.mapSizeY/2)));
+
         initBoard();
+    }
+
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        this.map.nextDay();
+        drawMap(g);
     }
 
     private void initBoard() {
@@ -51,8 +52,9 @@ public class Board extends JPanel {
         setPreferredSize(new Dimension(this.mapSizeX * this.scale, this.mapSizeY * this.scale));
         loadImage();
 
-        this.timer = new Timer();
-        this.timer.scheduleAtFixedRate(new ScheduleTask(), INITIAL_DELAY, PERIOD_INTERVAL);
+        Timer timer = new Timer();
+        int INITIAL_DELAY = 0;
+        timer.scheduleAtFixedRate(new ScheduleTask(), INITIAL_DELAY, PERIOD_INTERVAL);
     }
 
     private void drawMap(Graphics g)
@@ -61,9 +63,11 @@ public class Board extends JPanel {
             for(int j = 0; j < this.mapSizeY; j++)
             {
                 IMapElement objectToDraw = this.map.getElementOnPosition(new Vector2d(i, j));
+
                 if(objectToDraw != null)
                 {
                    if(objectToDraw instanceof Animal) {
+//                       System.out.println("board: " + objectToDraw);
                        g.drawImage(this.sheep, this.scale * i, this.scale * j, this);
                    }
                    else if(objectToDraw instanceof Grass)
@@ -81,17 +85,8 @@ public class Board extends JPanel {
         this.sheep = ii.getImage().getScaledInstance(this.scale, this.scale, Image.SCALE_DEFAULT);
     }
 
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        this.map.nextDay();
-//        drawAllGrass(g);
-        drawMap(g);
-    }
-
     private class ScheduleTask extends TimerTask
     {
-
         @Override
         public void run() {
             repaint();

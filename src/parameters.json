@@ -1,0 +1,12 @@
+{ 
+  "width": 300,
+  "height": 100,
+  "startEnergy": 400,
+  "moveEnergy": 1,
+  "plantEnergy": 100,
+  "jungleRatio": 0.4,
+  "scale": 5,
+  "animalsAtBeginning": 50,
+  "periodInterval": 10
+}
+ 

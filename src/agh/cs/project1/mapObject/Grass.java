@@ -1,9 +1,11 @@
 package agh.cs.project1.mapObject;
 
 import agh.cs.project1.mapRepresentation.Vector2d;
+import agh.cs.project1.settings.LoadSettings;
 
 public class Grass implements IMapElement {
     private Vector2d position;
+    private final int health = LoadSettings.plantEnergy;
 
     public Grass(Vector2d position)
     {
@@ -18,5 +20,9 @@ public class Grass implements IMapElement {
     public String toString()
     {
         return "G";
+    }
+
+    public int getHealth(){
+        return this.health;
     }
 }
