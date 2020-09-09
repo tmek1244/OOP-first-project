@@ -25,4 +25,4 @@ Simple settings are in the file srd/parameters.json:
 
 
 
-![Algorithm schema](./example.jpg)
+![View](./example.png)
