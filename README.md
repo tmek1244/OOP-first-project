@@ -12,7 +12,7 @@ Project is created with:
 To run this project, compile and run class src/agh/cs/project1/visualization/Visualization.java
 
 ## Settings
-Simple settings are in the file srd/parameters.json:
+Simple settings are in the file src/parameters.json:
 * width - world width
 * height - world height
 * startEnergy - amount of energy sheep start with
